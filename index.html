@@ -1,0 +1,106 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Udhar Manager</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+  <h2>Udhar Manager</h2>
+
+  <form id="udharForm">
+    <label for="name">Customer Name</label>
+    <input type="text" id="name" required>
+
+    <label for="total">Total Amount (₹)</label>
+    <input type="number" id="total" required>
+
+    <label for="given">Amount Given (₹)</label>
+    <input type="number" id="given" required>
+
+    <button type="submit">Add Entry</button>
+  </form>
+
+  <h3>Customer Records</h3>
+  <table id="recordTable">
+    <thead>
+      <tr>
+        <th>Name</th>
+        <th>Total</th>
+        <th>Paid</th>
+        <th>Balance</th>
+        <th>Date</th>
+      </tr>
+    </thead>
+    <tbody id="recordList"></tbody>
+  </table>
+
+  <!-- Firebase SDK -->
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/11.8.1/firebase-app.js";
+    import { getFirestore, collection, addDoc, getDocs } from "https://www.gstatic.com/firebasejs/11.8.1/firebase-firestore.js";
+
+    const firebaseConfig = {
+      apiKey: "AIzaSyAxNSoE6E02B3XbbuWqdsqXcRjQZd8zIwY",
+      authDomain: "udhar-system.firebaseapp.com",
+      projectId: "udhar-system",
+      storageBucket: "udhar-system.appspot.com",
+      messagingSenderId: "223823162854",
+      appId: "1:223823162854:web:9337bf372685651ec9fa27"
+    };
+
+    const app = initializeApp(firebaseConfig);
+    const db = getFirestore(app);
+
+    const form = document.getElementById("udharForm");
+    const recordList = document.getElementById("recordList");
+
+    form.addEventListener("submit", async (e) => {
+      e.preventDefault();
+
+      const name = document.getElementById("name").value.trim();
+      const total = parseFloat(document.getElementById("total").value);
+      const given = parseFloat(document.getElementById("given").value);
+      const balance = total - given;
+      const date = new Date().toLocaleString();
+
+      if (name === "" || isNaN(total) || isNaN(given)) return;
+
+      try {
+        await addDoc(collection(db, "udharRecords"), {
+          name,
+          total,
+          given,
+          balance,
+          date
+        });
+        form.reset();
+        loadData();
+      } catch (err) {
+        console.error("Error adding document: ", err);
+      }
+    });
+
+    async function loadData() {
+      recordList.innerHTML = "";
+      const snapshot = await getDocs(collection(db, "udharRecords"));
+      snapshot.forEach((doc) => {
+        const data = doc.data();
+        const row = document.createElement("tr");
+        row.innerHTML = `
+          <td>${data.name}</td>
+          <td>₹${data.total}</td>
+          <td>₹${data.given}</td>
+          <td>₹${data.balance}</td>
+          <td>${data.date}</td>
+        `;
+        recordList.appendChild(row);
+      });
+    }
+
+    loadData();
+  </script>
+</body>
+</html>
